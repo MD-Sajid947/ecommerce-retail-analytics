@@ -64,4 +64,4 @@ This project is an end-to-end exploratory data analysis (EDA) of a retail e-comm
 ## How to Run Locally
 1. Clone the repository:
    ```bash
-   git clone [https://github.com/your-username/ecommerce-retail-analytics.git](https://github.com/your-username/ecommerce-retail-analytics.git)
+   git clone [https://github.com/MD-Sajid947/ecommerce-retail-analytics.git](https://github.com/MD-Sajid947/ecommerce-retail-analytics.git)
