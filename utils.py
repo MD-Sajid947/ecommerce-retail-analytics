@@ -9,16 +9,16 @@ def place_valid_num(num):
     
     if magnitude >= 1_000_000_000:
         val = math.floor((magnitude / 1_000_000_000)*100)/100
-        return f"{sign}${val:.2f}B"
+        return f"{sign}£{val:.2f}B"
     elif magnitude >= 1_000_000:
         val = math.floor((magnitude / 1_000_000)*100)/100
-        return f"{sign}${val:.2f}M"
+        return f"{sign}£{val:.2f}M"
     elif magnitude >= 1_000:
         val = math.floor((magnitude / 1_000)*100)/100
-        return f"{sign}${val:.2f}K"
+        return f"{sign}£{val:.2f}K"
     else:
         val = math.floor(magnitude * 100)/100
-        return f"{sign}${val:.2f}"
+        return f"{sign}£{val:.2f}"
 
 
 def detect_numeric_values(number):
