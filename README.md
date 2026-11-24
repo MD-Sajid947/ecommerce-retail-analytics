@@ -1,13 +1,20 @@
-# E-Commerce Retail Audit & Retention Strategy
+# E-Commerce Retail Audit & Customer Retention Strategy
 
-## Executive Summary
-An end-to-end exploratory data analysis (EDA) of UK-based online retail transactions designed to audit unattributed sales, map cohort retention lifecycles, and identify high-value B2B purchasing patterns to guide account management and CRM timing.
+An end-to-end exploratory data analysis (EDA) and customer lifecycle audit of **541,909 transaction records from a UK-based online retailer** (Dec 2010 – Dec 2011). Using a dual-pipeline architecture in Python (`Pandas`, `NumPy`, `Matplotlib`, `Seaborn`), this project separates **completed purchasing behavior** from **net financial transactions** (including cancellations and returns) to diagnose revenue concentration, retention drop-offs, and refund exposure.
 
-**Key Commercial Findings:**
-- **Unattributed Transactions Audit:** Quantified **£1.44M (14.85% of net sales)** in transactions lacking a `CustomerID` (guest checkouts or unlinked orders), highlighting a major opportunity for checkout identity capture.
-- **High-Value Buyers Start Big From Order #1:** Aggregating at the full invoice level revealed that top-tier buyers do **not** start with micro-transactions—their median first order is **£474.19** (IQR: **£308.60 – £853.73**), scaling to Lifetime Values (LTV) of up to **£267,410**.
-- **Pareto Concentration & Q4 B2B Surge:** Confirmed a **74/26 revenue split** where the top 20% of customers generate 74% of completed product revenue (**~11x** the per-customer value of the bottom 80%) and drive **70.3% (£2.18M of £3.10M)** of the Sep–Nov peak sales window.
-- **Repeat-Purchase Latency Window:** Among repeat customers, the median interval between first and second purchase is **50 days**, establishing Days 25–45 as the critical window for automated win-back campaigns.
+---
+
+## Executive Summary & Key Findings
+
+| Metric / Audit Area | Verified Result | Strategic Takeaway |
+| :--- | :--- | :--- |
+| **Total Gross Revenue** | **£9.75M** (`£9,747,747.93`) | Full dataset top-line volume prior to unattributed/service filtering. |
+| **Unattributed Sales** | **£1.45M** (**14.85%** of gross) | 135,080 rows lack `CustomerID`s—representing a major CRM attribution blind spot. |
+| **Month-1 Retention Benchmark** | **21.27%** unweighted cohort avg | **78.73%** average Month-1 drop-off; retention stabilizes from Month 2 onward (`2010-12` peaked at **50.23%** in Month 11). |
+| **Pareto (80/20) Concentration** | **73.79%** from Top 20% (**864** VIPs) | High-spend VIPs maintain a **69.0%–78.6%** monthly share year-round, showing that high-value customer concentration was present throughout the observed period. |
+| **Sep–Nov Sales Surge** | **£3.01M** tracked net sales | Broad-based growth: VIPs jumped **+£193.0K** in Sep while the remaining 80% grew **+£118.1K**. |
+| **Segment Refund Exposure** | **4.24%** gross VIP vs. **2.22%** regular | A single large cancellation (`C541433`, **-£77,183.60**) drove **57.19%** of net non-VIP refund value. |
+| **Repeat Order Latency** | **50-day** median (**75.60-day** mean) | 75% of repeat buyers reorder within **111 days**, defining a clear CRM intervention window. |
 
 ---
 
@@ -18,39 +25,62 @@ An end-to-end exploratory data analysis (EDA) of UK-based online retail transact
 
 ---
 
-## Key Business Insights & Visualizations
+## Methodology & Data Engineering
 
-### 1. Customer Acquisition Trend & Cohort Headcount
-![Acquired Cohort Headcount](images/AcquiredCohort%20HeadCount.png)
-- **The Insight:** Tracked customer acquisition opens strongly with 884 first-time buyers in December 2010 and maintains steady acquisition through Q1 2011 before tapering in later months.
+To prevent return transactions from distorting customer acquisition dates or first-order baselines while keeping net sales 100% reconciled, the raw UCI Online Retail dataset was engineered into two synchronized pipelines:
 
-### 2. Cohort Retention & Month-1 Drop-Off Matrix
-![Cohort Retention Heatmap](images/CohortRetention%20Heatmap.png)
-- **The Insight:** Q1–Q3 cohorts experience a steep Month-1 drop-off (~78%+ non-return rate), whereas the December 2010 cohort demonstrates strong long-term stickiness (reaching 50.2% retention in Month 11).
-- **Strategic Play:** Deploy an automated CRM re-engagement sequence (product check-in at Day 25, targeted incentive at Day 45) to convert one-time buyers before repeat momentum stalls around Day 50.
-
-### 3. Monthly Revenue Trajectory & Sep–Nov B2B Surge
-![Monthly Gross Revenue](images/Monthly%20GrossRevenue.png)
-- **The Insight:** Monthly completed product revenue climbed from **£568K** in December 2010 to **£1.14M** in November 2011, driven by a **£306K month-over-month jump in September**. Isolating the Sep–Nov window (£3.10M total) confirms that top-20% accounts generated **£2.18M (70.3%)** of peak-period sales through bulk restocking.
-- **Strategic Play:** Launch wholesale pre-booking outreach and volume-tier incentives in July/August to capture Q4 B2B inventory budgets early.
-
-### 4. Pareto Revenue Concentration ("Whale" Dynamics)
-![Pareto Distribution](images/Pareto(80%2020)%20Distribution.png)
-- **The Insight:** The top 20% of customers account for **74%** of completed product revenue while the remaining 80% account for **26%**—meaning an average top-tier buyer generates roughly **11x** the revenue of a standard buyer.
-- **Strategic Play:** Use **First Order Value** ($\ge$ **£300**) as an early lead-scoring trigger to flag high-potential B2B accounts immediately after Order #1 and assign dedicated Key Account Managers.
-
-### 5. Repeat-Purchase Latency Window
-![Second Order Duration](images/SecondOrder%20DurationChart.png)
-- **The Insight:** Among customers who make a repeat purchase, the median time between their first and second order is **50 days**, giving marketing teams a clear benchmark for pre-churn intervention.
+1. **Sanitation & Horizon Alignment:**
+   - Audited and isolated `135,080` unattributed transactions (`£1.45M`) and `1,754` non-merchandise service entries (`POST`, `D`, `M`, `BANK CHARGES`, `PADS`, `CR`).
+   - Truncated incomplete December 2011 records to prevent right-edge time-truncation bias.
+2. **Synchronized Dual-Pipeline Architecture:**
+   - **`df` (Behavioral Pipeline):** Isolates strictly positive completed orders (`Quantity > 0`) to establish each customer's true acquisition cohort (`CohortMonth`), retention matrices, reorder latency, and `First_Purchase_value` (`£469.19` median) without left-censored return distortions.
+   - **`df_all` (Financial Pipeline):** Retains cancellation invoices (`InvoiceNo` starting with `'C'`) and negative quantities, inheriting each customer's behavioral `CohortMonth` from `df` so net sales after returns/cancellations, customer LTV, and Pareto tiers (`Top 20%` by historical net spend) align 1:1 with cohort headcounts.
 
 ---
 
-## Technical Execution & Data Hygiene
-- **Tech Stack:** Python (`pandas`, `numpy`, `matplotlib`, `seaborn`), JupyterLab.
-- **Two-Stage Accounting Separation:**
-  - *Pre-Filter Net Sales (`£9.74M`):* Evaluated full transactional records (including returns) to quantify tracked customer sales (**£8.30M / 85.15%**) vs. unattributed transactions missing a `CustomerID` (**£1.44M / 14.85%**).
-  - *Post-Filter Completed Product Revenue:* Removed unattributed rows, order cancellations (`InvoiceNo` starting with `C`), negative quantities, and non-merchandise service codes (`POST`, `D`, `M`, `BANK CHARGES`, etc.) prior to cohort, Pareto, and LTV modeling.
-- **Memory Optimization:** Applied explicit downcasting (`int32`, `float32`) to reduce DataFrame memory footprint across 540K+ records.
+## Deep-Dive Analysis & Actionable Recommendations
+
+### 1. Tracked vs. Unattributed Revenue Audit
+![E-commerce Net Sales Distribution](images/NetSales%20Distribution.png)
+- **Observation:** Out of **£9.75M** in total gross revenue, **£1.45M (14.85%)** across `135,080` line items lacks a recorded `CustomerID`.
+- **Action Plan:** Enforce checkout account-linking or email capture at order confirmation to eliminate unattributed transaction blind spots and expand CRM retargeting coverage.
+
+---
+
+### 2. Customer Acquisition & Peak Seasonality
+![Business Month Acquisition Count](images/AcquiredCohort%20HeadCount.png)
+![Business Month Net Revenue Data](images/Monthly%20GrossRevenue.png)
+- **Observation:** New customer acquisition peaked in `2010-12` (**884** accounts), while tracked net sales surged to **£3.01M** across September–November 2011.
+- **Action Plan:** Replicate the `2010-12` acquisition playbook (which generated our largest cohort of high-retention buyers) and introduce **tiered cart-threshold incentives** during peak months to capture high-AOV repeat accounts.
+
+---
+
+### 3. Cohort Retention & Month-1 Drop-Off
+![Cohort Retention Rate (%)](images/CohortRetention%20Heatmap.png)
+- **Observation:** Unweighted average Month-1 retention across acquisition cohorts drops to **21.27%** (**78.73%** drop-off), before stabilizing from Month 2 onward—with the `2010-12` cohort peaking at **50.23%** in Month 11.
+- **Action Plan:** Focus retention spend on converting first-time buyers into second-time buyers within their first 30–50 days rather than over-discounting established repeat customers.
+
+---
+
+### 4. Repeat Purchase Latency & CRM Escalation Workflow
+![Customer Re-Order Latency: Statistical Distribution](images/SecondOrder%20DurationChart.png)
+- **Observation:** Among returning buyers, the median time between Order 1 and Order 2 is **50 days** (**75.60-day** mean; **111 days** at the 75th percentile).
+- **Action Plan (Two-Stage CRM Workflow):**
+  - **Day 25 (Zero-Discount Nudge):** Send personalized restock reminders and SKU recommendations ahead of the Month-1 inactivity cliff to convert organic repeat buyers without eroding margin.
+  - **Day 45 (Targeted Conversion Offer):** Deploy a time-bound discount or cart-threshold voucher for still-inactive buyers right before the **50-day** median reorder window closes.
+
+---
+
+### 5. Pareto (80/20) Revenue Concentration & Peak Share Dynamics
+![Gross Revenue Distribution (80/20 Pareto Rule)](images/Pareto(80%2020)%20Distribution.png)
+- **Observation:** Top 20% high-spend customers (`864` accounts) generate **73.79%** of total tracked net sales and maintain **69.0%–78.6%** of monthly net sales across all quarters. During the **£3.01M** September–November sales surge, VIP share diluted from **77.1%** (Aug) to **69.0%** (Nov) not due to VIP slowdown, but because the remaining 80% segment expanded even faster.
+- **Action Plan:** Replicate the `2010-12` acquisition playbook (which generated our largest cohort of high-retention buyers) and introduce **tiered cart-threshold incentives** during peak months to capture high-AOV repeat accounts.
+
+---
+
+### 6. Large-Order Cancellation Guardrails & VIP SKU Audits
+- **Observation:** While **69.21%** of net VIPs logged at least one return or invoice adjustment (vs. **26.00%** of regular buyers) due to higher purchase frequency, a single large cancellation (`C541433`, **-£77,183.60**) accounted for **57.19%** of all net non-VIP refund value. Defining segments by gross purchase spend prior to returns (`vip_gross`) confirms high-spend buyers carry nearly double the refund rate (**4.24%** vs. **2.22%**).
+- **Action Plan:** Require pre-dispatch confirmation or partial deposits on unusually large orders exceeding £10K, and audit top-returned VIP `StockCode`s to distinguish routine invoice adjustments from SKU defects.
 
 ---
 
@@ -80,7 +110,6 @@ An end-to-end exploratory data analysis (EDA) of UK-based online retail transact
 
 ## How to Run Locally
 
-
 1. **Clone the repository:**
    ```bash
    git clone [https://github.com/MD-Sajid947/ecommerce-retail-analytics.git](https://github.com/MD-Sajid947/ecommerce-retail-analytics.git)
@@ -98,4 +127,3 @@ An end-to-end exploratory data analysis (EDA) of UK-based online retail transact
    ```bash
    jupyter lab ecommerce-analytics.ipynb
    ```
-   *(The notebook automatically downloads and extracts the dataset from the UCI repository on first run.)*
