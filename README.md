@@ -34,7 +34,7 @@ To prevent return transactions from distorting customer acquisition dates or fir
    - Truncated incomplete December 2011 records to prevent right-edge time-truncation bias.
 2. **Synchronized Dual-Pipeline Architecture:**
    - **`df` (Behavioral Pipeline):** Isolates strictly positive completed orders (`Quantity > 0`) to establish each customer's true acquisition cohort (`CohortMonth`), retention matrices, reorder latency, and `First_Purchase_value` (`£469.19` median) without left-censored return distortions.
-   - **`df_all` (Financial Pipeline):** Retains cancellation invoices (`InvoiceNo` starting with `'C'`) and negative quantities, inheriting each customer's behavioral `CohortMonth` from `df` so net sales after returns/cancellations, customer LTV, and Pareto tiers (`Top 20%` by historical net spend) align 1:1 with cohort headcounts.
+   - **`df_all` (Financial Pipeline):** Retains cancellation invoices (`InvoiceNo` starting with `'C'`) and negative quantities, inheriting each customer's behavioral `CohortMonth` from `df` so net sales after returns/cancellations, customer LTV, and Pareto tiers (`Top 20%` by historical net spend).
 
 ---
 
